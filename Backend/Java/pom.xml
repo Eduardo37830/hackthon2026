@@ -89,6 +89,11 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- Source: https://mvnrepository.com/artifact/com.auth0/java-jwt -->
 		<dependency>
 			<groupId>com.auth0</groupId>
