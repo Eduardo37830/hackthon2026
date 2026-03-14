@@ -3,12 +3,18 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { LoginPage } from './features/auth/pages/LoginPage'
 import { RegisterPage } from './features/auth/pages/RegisterPage'
+import { CamerasPage } from './features/home/pages/CamerasPage'
+import { HomePage } from './features/home/pages/HomePage'
+import { SettingsPage } from './features/home/pages/SettingsPage'
 
 interface AppProps {
   readonly __noProps?: never
 }
 
 const routes = {
+  home: '/home',
+  settings: '/settings',
+  cameras: '/cameras',
   login: '/login',
   register: '/register',
 } as const
@@ -16,10 +22,13 @@ const routes = {
 const App: FC<AppProps> = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={routes.login} replace />} />
+      <Route path="/" element={<Navigate to={routes.home} replace />} />
+      <Route path={routes.home} element={<HomePage />} />
+      <Route path={routes.settings} element={<SettingsPage />} />
+      <Route path={routes.cameras} element={<CamerasPage />} />
       <Route path={routes.login} element={<LoginPage />} />
       <Route path={routes.register} element={<RegisterPage />} />
-      <Route path="*" element={<Navigate to={routes.login} replace />} />
+      <Route path="*" element={<Navigate to={routes.home} replace />} />
     </Routes>
   )
 }
