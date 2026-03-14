@@ -1,32 +1,26 @@
-import type { FC } from "react"
+import type { FC } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
-import "./App.css"
-import { DocumentationSection } from "./features/home/components/DocumentationSection"
-import { HeroSection } from "./features/home/components/HeroSection"
-import { SocialSection } from "./features/home/components/SocialSection"
-import { useCounter } from "./hooks/useCounter"
+import { LoginPage } from './features/auth/pages/LoginPage'
+import { RegisterPage } from './features/auth/pages/RegisterPage'
 
 interface AppProps {
   readonly __noProps?: never
 }
 
+const routes = {
+  login: '/login',
+  register: '/register',
+} as const
+
 const App: FC<AppProps> = () => {
-  const { count, increment } = useCounter()
-
   return (
-    <>
-      <HeroSection count={count} onIncrement={increment} />
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <DocumentationSection />
-        <SocialSection />
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <Routes>
+      <Route path="/" element={<Navigate to={routes.login} replace />} />
+      <Route path={routes.login} element={<LoginPage />} />
+      <Route path={routes.register} element={<RegisterPage />} />
+      <Route path="*" element={<Navigate to={routes.login} replace />} />
+    </Routes>
   )
 }
 

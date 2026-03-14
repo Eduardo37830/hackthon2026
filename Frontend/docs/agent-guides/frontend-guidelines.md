@@ -6,6 +6,24 @@
 - Every component must define a typed `Props` interface.
 - Move non-render logic out of components into hooks.
 - Do not hardcode user-facing text in components.
+- Prefer shared UI primitives for repeated patterns.
+- Input controls must reuse a shared input component instead of duplicating markup.
+- Hyperlinks and text actions must use a shared link/action component when style and behavior are shared.
+- Loading states must reuse the shared spinner component in `src/components/Spinner.tsx`.
+- Do not create ad-hoc loaders in feature folders when the shared spinner covers the use case.
+
+## Design Tokens
+
+- Global color palette must be defined in `src/index.css` as CSS variables.
+- Feature styles must consume global tokens instead of raw hex values when equivalent tokens exist.
+- Shadows and semantic colors should use token names to keep branding changes centralized.
+- Loader colors and sizes must use global loader tokens from `src/index.css`.
+
+## Loader Standard
+
+- Use `Spinner` as the default loader for all pending states.
+- Use `tone="dark"` on light backgrounds and `tone="light"` on dark backgrounds.
+- Use `size` variants (`sm`, `md`, `lg`) instead of local CSS overrides whenever possible.
 
 ## Hook Patterns
 

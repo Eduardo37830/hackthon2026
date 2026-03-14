@@ -16,6 +16,12 @@ Business logic belongs in hooks.
 
 Rendering belongs in components.
 
+Reusable UI patterns (inputs, links, buttons, wrappers) must be extracted into shared components.
+
+Loading indicators must use the shared spinner component in `src/components/Spinner.tsx`.
+
+Do not create custom loader implementations when this shared spinner is sufficient.
+
 ## TypeScript
 
 Strict mode is mandatory.
@@ -31,6 +37,12 @@ User-facing text must never be hardcoded.
 Always import labels from:
 
 `src/constants/labels.ts`
+
+## Design Tokens
+
+Global color palette tokens must be defined in `src/index.css`.
+
+Feature styles must consume shared tokens, not duplicate raw color literals.
 
 ## Validation
 
