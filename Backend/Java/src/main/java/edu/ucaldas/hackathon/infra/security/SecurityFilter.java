@@ -69,7 +69,6 @@ public class SecurityFilter extends OncePerRequestFilter {
      * @throws IOException      if an input or output error occurs during filtering
      * @throws ServletException if the request could not be handled
      */
-    @SuppressWarnings("null")
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         var authorizationHeader = request.getHeader("Authorization");
         System.out.println(request);
