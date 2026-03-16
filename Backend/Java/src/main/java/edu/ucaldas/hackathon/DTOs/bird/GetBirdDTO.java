@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 import edu.ucaldas.hackathon.DTOs.camera.GetCameraDTO;
+import edu.ucaldas.hackathon.DTOs.photo.GetPhotoDTO;
+import edu.ucaldas.hackathon.DTOs.species.GetSpeciesDTO;
 
 public record GetBirdDTO(
     UUID id,

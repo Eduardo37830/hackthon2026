@@ -4,10 +4,12 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.service.annotation.DeleteExchange;
 
 import edu.ucaldas.hackathon.DTOs.camera.CreateCameraDTO;
 import edu.ucaldas.hackathon.DTOs.camera.GetCameraDTO;
@@ -15,6 +17,8 @@ import edu.ucaldas.hackathon.DTOs.camera.MonitoringSocketStatusDTO;
 import edu.ucaldas.hackathon.DTOs.camera.UpdateCameraDTO;
 import edu.ucaldas.hackathon.services.CameraMonitoringSubscriptionTracker;
 import edu.ucaldas.hackathon.services.CameraService;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,8 +44,8 @@ public class CameraController {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<GetCameraDTO>> getAllCameras() {
-        var cameras = cameraService.getAllCameras();
+    public ResponseEntity<Page<GetCameraDTO>> getAllCameras(@PageableDefault(size = 20) Pageable pageable) {
+        var cameras = cameraService.getAllCameras(pageable);
         return ResponseEntity.ok(cameras);
     }
 
@@ -66,7 +70,7 @@ public class CameraController {
         return ResponseEntity.ok(camera);
     }
 
-    @DeleteExchange("/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteCamera(@PathVariable String id) {
         cameraService.deleteCamera(id);
         return ResponseEntity.noContent().build();

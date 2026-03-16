@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,8 +39,8 @@ public class BirdController {
 	}
 
 	@GetMapping("")
-	public ResponseEntity<List<GetBirdDTO>> getAllBirds() {
-		return ResponseEntity.ok(birdService.getAllBirds());
+	public ResponseEntity<Page<GetBirdDTO>> getAllBirds(@PageableDefault(size = 20) Pageable pageable) {
+		return ResponseEntity.ok(birdService.getAllBirds(pageable));
 	}
 
 	@GetMapping("/camera/{cameraId}")

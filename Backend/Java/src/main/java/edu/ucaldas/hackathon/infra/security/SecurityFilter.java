@@ -9,10 +9,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import edu.ucaldas.hackathon.infra.exception.DataNotFound;
 import edu.ucaldas.hackathon.infra.exception.ErrorToken;
 import edu.ucaldas.hackathon.repositories.IUserRepository;
 import edu.ucaldas.hackathon.services.TokenService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -80,7 +80,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                     var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } else {
-                    throw new EntityNotFoundException("User not found or inactive");
+                    throw new DataNotFound("User not found");
                 }
             } else {
                 throw new ErrorToken("Invalid token");
