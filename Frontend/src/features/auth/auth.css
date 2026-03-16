@@ -178,6 +178,18 @@
   padding-right: 52px;
 }
 
+.auth-input-password::-ms-reveal,
+.auth-input-password::-ms-clear {
+  display: none;
+}
+
+.auth-input-password::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
 .auth-password-toggle {
   position: absolute;
   right: 10px;
