@@ -7,17 +7,31 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import edu.ucaldas.hackathon.DTOs.bird.CreateBirdDTO;
 import edu.ucaldas.hackathon.DTOs.bird.GetBirdDTO;
 import edu.ucaldas.hackathon.DTOs.bird.GetPhotoDTO;
 import edu.ucaldas.hackathon.DTOs.bird.GetSpeciesDTO;
+import edu.ucaldas.hackathon.DTOs.bird.UpdateBirdDTO;
 import edu.ucaldas.hackathon.models.Bird;
 import edu.ucaldas.hackathon.repositories.IBirdRepository;
+import edu.ucaldas.hackathon.repositories.ICameraRepository;
+import edu.ucaldas.hackathon.repositories.IPhotoRepository;
+import edu.ucaldas.hackathon.repositories.ISpeciesRepository;
 
 @Service
 public class BirdService {
 
 	@Autowired
 	private IBirdRepository birdRepository;
+
+	@Autowired
+	private ISpeciesRepository speciesRepository;
+
+	@Autowired
+	private IPhotoRepository photoRepository;
+
+	@Autowired
+	private ICameraRepository cameraRepository;
 
 	public GetBirdDTO getBirdById(String id) {
 		var bird = birdRepository.findById(UUID.fromString(id)).orElseThrow(() -> new RuntimeException("Bird not found"));
@@ -48,6 +62,49 @@ public class BirdService {
 	public List<GetBirdDTO> getBirdsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
 		validateDateRange(startDate, endDate);
 		return birdRepository.findByPhoto_TakenAtBetween(startDate, endDate).stream().map(this::toGetBirdDTO).toList();
+	}
+
+	public GetBirdDTO createBird(CreateBirdDTO createBirdDTO) {
+		var species = speciesRepository.findById(UUID.fromString(createBirdDTO.speciesId()))
+				.orElseThrow(() -> new RuntimeException("Species not found"));
+		var photo = photoRepository.findById(UUID.fromString(createBirdDTO.photoId()))
+				.orElseThrow(() -> new RuntimeException("Photo not found"));
+		var camera = cameraRepository.findById(UUID.fromString(createBirdDTO.cameraId()))
+				.orElseThrow(() -> new RuntimeException("Camera not found"));
+
+		var bird = new Bird();
+		bird.setProbabilityYolo(createBirdDTO.probabilityYolo());
+		bird.setSpecies(species);
+		bird.setPhoto(photo);
+		bird.setCamera(camera);
+
+		birdRepository.save(bird);
+		return toGetBirdDTO(bird);
+	}
+
+	public GetBirdDTO updateBird(String id, UpdateBirdDTO updateBirdDTO) {
+		var bird = birdRepository.findById(UUID.fromString(id))
+				.orElseThrow(() -> new RuntimeException("Bird not found"));
+		var species = speciesRepository.findById(UUID.fromString(updateBirdDTO.speciesId()))
+				.orElseThrow(() -> new RuntimeException("Species not found"));
+		var photo = photoRepository.findById(UUID.fromString(updateBirdDTO.photoId()))
+				.orElseThrow(() -> new RuntimeException("Photo not found"));
+		var camera = cameraRepository.findById(UUID.fromString(updateBirdDTO.cameraId()))
+				.orElseThrow(() -> new RuntimeException("Camera not found"));
+
+		bird.setProbabilityYolo(updateBirdDTO.probabilityYolo());
+		bird.setSpecies(species);
+		bird.setPhoto(photo);
+		bird.setCamera(camera);
+
+		birdRepository.save(bird);
+		return toGetBirdDTO(bird);
+	}
+
+	public void deleteBird(String id) {
+		var bird = birdRepository.findById(UUID.fromString(id))
+				.orElseThrow(() -> new RuntimeException("Bird not found"));
+		birdRepository.delete(bird);
 	}
 
 	private void validateDateRange(LocalDateTime startDate, LocalDateTime endDate) {
