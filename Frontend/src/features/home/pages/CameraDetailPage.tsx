@@ -1,8 +1,8 @@
 import { useEffect, type FC } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { labels } from '../../../constants/labels'
-import { HomeShell } from '../components/HomeShell'
+import { labels } from '@/constants/labels'
+import { HomeShell } from '@/features/home/components/HomeShell'
 
 interface CameraDetailPageProps {
   readonly __noProps?: never
