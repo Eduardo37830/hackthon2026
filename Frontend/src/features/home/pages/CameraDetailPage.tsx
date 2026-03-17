@@ -1,268 +1,502 @@
-import { useEffect, useRef, useState, type FC } from 'react'
-import { useParams } from 'react-router-dom'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FC,
+} from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ChevronLeft, Camera, AlertCircle, Loader2, Activity } from 'lucide-react'
 
 import { labels } from '@/constants/labels'
 import { HomeShell } from '@/features/home/components/HomeShell'
 import { Button } from '../../../shared/ui/button/Button'
+import { Card } from '@/shared/ui/card/Card'
+import {
+  analysisService,
+  type AnalysisResult,
+  type BirdDetection,
+} from '../services/analysis.service'
+import { BirdDetectionCard } from '../components/BirdDetectionCard'
+import { DetectionStatsComponent } from '../components/DetectionStats'
+import './CameraDetailPage.css'
+import './CameraDetailPage.css'
 
 interface CameraDetailPageProps {
   readonly __noProps?: never
 }
 
+type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error' | 'disconnected'
+
 export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
+  const navigate = useNavigate()
   const { cameraId } = useParams<{ cameraId: string }>()
-  
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const wsRef = useRef<WebSocket | null>(null)
-  
+  const streamRef = useRef<MediaStream | null>(null)
+  const frameIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [isStreaming, setIsStreaming] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('')
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle')
   const [streamError, setStreamError] = useState<string>('')
-  const [detections, setDetections] = useState<any[]>([])
+  const [detections, setDetections] = useState<BirdDetection[]>([])
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 })
+  const [showImageDetail, setShowImageDetail] = useState<BirdDetection | null>(null)
+  const [fps, setFps] = useState(4)
+  const frameCountRef = useRef(0)
+  const fpsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Obtener lista de cámaras disponibles al montar
   useEffect(() => {
-    document.title = labels.cameraDetailPageTitle
-    
-    // Obtener lista de cámaras disponibles
-    navigator.mediaDevices.enumerateDevices().then(deviceInfos => {
-      const videoDevices = deviceInfos.filter(d => d.kind === 'videoinput')
-      setDevices(videoDevices)
-      if (videoDevices.length > 0) {
-        setSelectedDeviceId(videoDevices[0].deviceId)
-      }
-    }).catch(err => {
-      console.error('Error listando dispositivos:', err)
-      setStreamError('No se pudieron obtener las cámaras web.')
-    })
+    document.title = labels.cameraDetailPageTitle || 'Detalle de Cámara'
+
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((deviceInfos) => {
+        const videoDevices = deviceInfos.filter((d) => d.kind === 'videoinput')
+        setDevices(videoDevices)
+        if (videoDevices.length > 0 && !selectedDeviceId) {
+          setSelectedDeviceId(videoDevices[0].deviceId)
+        }
+      })
+      .catch((err) => {
+        console.error('Error enumerando dispositivos:', err)
+        setStreamError('No se pudieron obtener las cámaras disponibles.')
+      })
 
     return () => {
-      stopStreaming() // Limpieza al desmontar
+      stopStreaming()
     }
   }, [])
 
-  const startStreaming = async () => {
-    try {
-      setStreamError('')
-      
-      // 1. Iniciar cámara física
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined }
-      })
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
+  // Listener para cambios de estado del servicio de análisis
+  useEffect(() => {
+    const unsubscribeStatus = analysisService.onStatusChange((status) => {
+      setConnectionStatus(
+        status === 'connected'
+          ? 'connected'
+          : status === 'error'
+            ? 'error'
+            : 'disconnected',
+      )
+      if (status === 'error') {
+        setStreamError(
+          'Error en la conexión con el servidor de análisis. Verifica que Python esté ejecutándose.',
+        )
       }
-      
-      // 2. Conectar WebSocket a Python
-      // Nota: asumo que Python corre en el puerto 8000 (ajustar si es necesario)
-      const wsUrl = `ws://localhost:8000/ws/video_stream?id_dispositivo=${cameraId}&camera_id=${cameraId}`
-      wsRef.current = new WebSocket(wsUrl)
-      
-      wsRef.current.onopen = () => {
-        console.log('Felicidades: WebSocket conectado al modelo de Python.')
-        setIsStreaming(true)
-        captureAndSendFrame()
-      }
-      
-      wsRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (data.alerta && data.detecciones) {
-             setDetections(data.detecciones)
-          } else {
-             setDetections([])
-          }
-        } catch (e) {
-          console.error("No se pudo parsear el mensaje del WS", e)
+    })
+
+    const unsubscribeMessage = analysisService.onMessage((result: AnalysisResult) => {
+      if (result.detecciones && result.detecciones.length > 0) {
+        setDetections(result.detecciones)
+      } else {
+        // Solo limpiamos si no nos envían error explícito de frame, 
+        // asumiendo que "alerta: False, detecciones: []" es el caso normal
+        if (!result.error) {
+          setDetections([])
         }
       }
-      
-      wsRef.current.onerror = (error) => {
-        console.error('Error en WebSocket:', error)
-        setStreamError('Error conectando con el servidor de análisis (Python). Confirma que esté encendido.')
-        stopStreaming()
-      }
-      
-      wsRef.current.onclose = () => {
-        console.log('WebSocket cerrado')
-        setIsStreaming(false)
-      }
-      
-    } catch (err) {
-      console.error('Error accediendo a la cámara:', err)
-      setStreamError('Permiso denegado o cámara en uso por otra app.')
-    }
-  }
+    })
 
-  const stopStreaming = () => {
-    // Apagar la cámara física
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
-      tracks.forEach(track => track.stop())
-      videoRef.current.srcObject = null
+    return () => {
+      unsubscribeStatus()
+      unsubscribeMessage()
     }
-    
-    // Cerrar el websocket hacia Python
-    if (wsRef.current) {
-       wsRef.current.close()
-       wsRef.current = null
-    }
-    
-    setIsStreaming(false)
-    setDetections([])
-  }
+  }, [])
 
-  const captureAndSendFrame = () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+  const handleVideoMetadata = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget
+      setVideoDimensions({ width: video.videoWidth, height: video.videoHeight })
+    },
+    [],
+  )
+
+  const captureAndSendFrame = useCallback(() => {
+    const frameDelay = 1000 / fps
+    const scheduleNext = () => {
+      frameIntervalRef.current = setTimeout(captureAndSendFrame, frameDelay)
+    }
+
     if (!videoRef.current || !canvasRef.current) return
+
+    if (analysisService.getStatus() !== 'connected') {
+      scheduleNext()
+      return
+    }
 
     const video = videoRef.current
     const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-    
-    if (context && video.videoWidth > 0 && video.videoHeight > 0) {
-      // Ajustar tamaño del canvas a la resolución real del video
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      
-      // Dibujar frame en el canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height)
-      
-      // Convertir el canvas a binario (JPEG comprimido al 70%)
-      canvas.toBlob((blob) => {
-        if (blob && wsRef.current?.readyState === WebSocket.OPEN) {
-           wsRef.current.send(blob)
-        }
-      }, 'image/jpeg', 0.7)
+    const ctx = canvas.getContext('2d')
+
+    if (!ctx || video.videoWidth === 0 || video.videoHeight === 0) {
+      scheduleNext()
+      return
     }
 
-    // Volver a llamar a esta misma función para transmitir otro frame
-    // Aquí puedes controlar los FPS del envío (ej: cada 250ms = 4 FPS)
-    setTimeout(() => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-         requestAnimationFrame(captureAndSendFrame)
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    canvas.toBlob((blob) => {
+      if (blob && analysisService.getStatus() === 'connected') {
+        analysisService.sendFrame(blob)
+        frameCountRef.current++
       }
-    }, 250)
-  }
+    }, 'image/jpeg', 0.7)
+
+    scheduleNext()
+  }, [fps])
+
+  const startStreaming = useCallback(async () => {
+    try {
+      setStreamError('')
+      setConnectionStatus('connecting')
+
+      if (!selectedDeviceId && devices.length === 0) {
+        throw new Error('No hay cámaras disponibles')
+      }
+
+      // Iniciar stream de video
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: selectedDeviceId
+            ? { exact: selectedDeviceId }
+            : undefined,
+        },
+      })
+
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+
+      // Conectar al servicio de análisis
+      analysisService.connect(cameraId || 'unknown', (result: AnalysisResult) => {
+        if (result.detecciones && result.detecciones.length > 0) {
+          setDetections(result.detecciones)
+        } else {
+          setDetections([])
+        }
+      })
+
+      // Esperar a que el video esté listo
+      await new Promise<void>((resolve) => {
+        const checkVideo = () => {
+          if (videoRef.current?.videoWidth && videoRef.current?.videoHeight) {
+            setIsStreaming(true)
+            captureAndSendFrame()
+            resolve()
+          } else {
+            setTimeout(checkVideo, 100)
+          }
+        }
+        checkVideo()
+      })
+    } catch (err) {
+      console.error('Error iniciando stream:', err)
+      const message =
+        err instanceof Error ? err.message : 'Error desconocido'
+      setStreamError(
+        message.includes('Permission')
+          ? 'Permiso denegado para acceder a la cámara'
+          : message,
+      )
+      setConnectionStatus('error')
+    }
+  }, [selectedDeviceId, devices.length, cameraId, captureAndSendFrame])
+
+  const stopStreaming = useCallback(() => {
+    // Detener captura de frames
+    if (frameIntervalRef.current) {
+      clearTimeout(frameIntervalRef.current)
+      frameIntervalRef.current = null
+    }
+
+    // Detener video stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+
+    // Desconectar servicio de análisis
+    analysisService.disconnect()
+
+    // Limpiar estado
+    setIsStreaming(false)
+    setDetections([])
+    setConnectionStatus('disconnected')
+    frameCountRef.current = 0
+
+    // Limpiar timer de FPS
+    if (fpsTimerRef.current) {
+      clearInterval(fpsTimerRef.current)
+      fpsTimerRef.current = null
+    }
+  }, [])
+
+  const handleDownloadDetection = useCallback(
+    (detection: BirdDetection, index: number) => {
+      // Convertir base64 a blob y descargar
+      const link = document.createElement('a')
+      link.href = detection.foto_base64
+      link.download = `bird-detection-${index}-${detection.especie}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    },
+    [],
+  )
 
   return (
     <HomeShell activeTab="cameras">
-      <div className="home-camera-detail-placeholder" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div>
-          <h2 className="home-camera-detail-title">{labels.cameraDetailPlaceholderTitle || 'Vista en Vivo de Cámara'}</h2>
-          <p className="home-camera-detail-subtitle">{`${labels.cameraDetailPlaceholderPrefix || 'ID:'} ${cameraId ?? labels.cameraDetailUnknownCamera}`}</p>
+      <div className="camera-detail-page">
+        {/* Header */}
+        <div className="camera-detail-header">
+          <button
+            className="camera-detail-back-btn"
+            onClick={() => navigate('/cameras')}
+            aria-label="Volver"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="camera-detail-title-group">
+            <h1 className="camera-detail-title">Vista en Vivo de Cámara</h1>
+            <p className="camera-detail-subtitle">
+              Cámara ID: <code>{cameraId || 'desconocida'}</code>
+            </p>
+          </div>
+          <div className="camera-detail-status-badge">
+            {connectionStatus === 'connecting' && (
+              <>
+                <Loader2 size={16} className="status-icon-spin" />
+                Conectando...
+              </>
+            )}
+            {connectionStatus === 'connected' && (
+              <>
+                <Activity size={16} className="status-icon-pulse" />
+                En Vivo
+              </>
+            )}
+            {connectionStatus === 'error' && (
+              <>
+                <AlertCircle size={16} />
+                Error de Conexión
+              </>
+            )}
+            {(connectionStatus === 'idle' || connectionStatus === 'disconnected') && (
+              <>
+                <Camera size={16} />
+                Desconectado
+              </>
+            )}
+          </div>
         </div>
 
-        {streamError && <p style={{ color: 'red', fontWeight: 'bold' }}>{streamError}</p>}
-        
-        {devices.length > 0 && !isStreaming && (
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label>Seleccionar cámara:</label>
-            <select 
-              value={selectedDeviceId} 
-              onChange={(e) => setSelectedDeviceId(e.target.value)}
-              className="auth-input-control"
-              style={{ width: 'auto'}}
-            >
-              {devices.map(device => (
-                <option key={device.deviceId} value={device.deviceId}>
-                  {device.label || `Cámara ${device.deviceId.substring(0,5)}...`}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Error message */}
+        {streamError && (
+          <Card className="camera-detail-error-card">
+            <AlertCircle size={20} />
+            <div>
+              <strong>Error:</strong> {streamError}
+            </div>
+          </Card>
         )}
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {!isStreaming ? (
-            <Button variant="primary" onClick={startStreaming}>
-              Conectar y Analizar Video
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={stopStreaming}>
-              Detener Transmisión
-            </Button>
-          )}
+        <div className="camera-detail-content">
+          {/* Left side: Video and controls */}
+          <div className="camera-detail-video-section">
+            {/* Device selector */}
+            {devices.length > 0 && !isStreaming && (
+              <div className="camera-detail-device-selector">
+                <label htmlFor="device-select">Seleccionar cámara:</label>
+                <select
+                  id="device-select"
+                  value={selectedDeviceId}
+                  onChange={(e) => setSelectedDeviceId(e.target.value)}
+                  className="device-select-input"
+                >
+                  {devices.map((device) => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Cámara ${device.deviceId.substring(0, 5)}...`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Video player */}
+            <div className="camera-detail-video-container">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onLoadedMetadata={handleVideoMetadata}
+                className="camera-detail-video"
+              />
+
+              {/* Overlay with detections */}
+              {videoDimensions.width > 0 && (
+                <>
+                  {detections.map((detection, index) => (
+                    <BirdDetectionCard
+                      key={`${detection.especie}-${index}`}
+                      detection={detection}
+                      index={index}
+                      videoDimensions={videoDimensions}
+                      onImageClick={() => setShowImageDetail(detection)}
+                    />
+                  ))}
+
+                  {/* Live indicator */}
+                  {detections.length > 0 && (
+                    <div className="camera-detail-live-badge">
+                      <span className="live-dot">●</span>
+                      {detections.length} ave{detections.length !== 1 ? 's' : ''} detectada
+                      {detections.length !== 1 ? 's' : ''}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Canvas oculto para captura */}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+            {/* Controls */}
+            <div className="camera-detail-controls">
+              {!isStreaming ? (
+                <Button
+                  variant="primary"
+                  onClick={startStreaming}
+                  disabled={connectionStatus === 'connecting'}
+                  className="control-button"
+                >
+                  {connectionStatus === 'connecting' ? (
+                    <>
+                      <span className="button-loading" />
+                      Conectando...
+                    </>
+                  ) : (
+                    <>
+                      <Camera size={18} />
+                      Iniciar Análisis
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={stopStreaming}
+                  className="control-button control-button--danger"
+                >
+                  <AlertCircle size={18} />
+                  Detener Análisis
+                </Button>
+              )}
+
+              {/* FPS selector */}
+              <div className="fps-selector">
+                <label htmlFor="fps-input">FPS:</label>
+                <input
+                  id="fps-input"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={fps}
+                  onChange={(e) => setFps(Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
+                  disabled={isStreaming}
+                  className="fps-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right side: Detections list and stats */}
+          <div className="camera-detail-sidebar">
+            {/* Statistics */}
+            <DetectionStatsComponent detections={detections} isLive={isStreaming} />
+
+            {/* Detections list */}
+            {detections.length > 0 && (
+              <div className="camera-detail-detections-list">
+                <h3 className="detections-list-title">Detecciones</h3>
+                <div className="detections-scroll">
+                  {detections.map((detection, index) => (
+                    <div
+                      key={`${detection.especie}-${index}-list`}
+                      className="detection-list-item"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleDownloadDetection(detection, index)}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && handleDownloadDetection(detection, index)
+                      }
+                    >
+                      <img
+                        src={detection.foto_base64}
+                        alt={detection.especie}
+                        className="detection-list-thumbnail"
+                      />
+                      <div className="detection-list-info">
+                        <div className="detection-list-species">
+                          {detection.especie}
+                        </div>
+                        <div className="detection-list-confidence">
+                          {detection.confianza.toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="detection-list-download">↓</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        
-        {/* El contendor del video */}
-        <div style={{ 
-          position: 'relative', 
-          width: '100%', 
-          maxWidth: '640px', 
-          aspectRatio: '16/9', 
-          backgroundColor: '#000', 
-          borderRadius: '8px', 
-          overflow: 'hidden' 
-        }}>
-           <video 
-             ref={videoRef} 
-             autoPlay 
-             playsInline 
-             muted
-             onLoadedMetadata={(e) => {
-               const video = e.target as HTMLVideoElement
-               setVideoDimensions({ width: video.videoWidth, height: video.videoHeight })
-             }}
-             style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
-           />
-           
-           {/* Info del análisis superpuesta (Python) */}
-           {detections.length > 0 && (
-             <div style={{ position: 'absolute', top: 10, left: 10, backgroundColor: 'rgba(255,0,0,0.7)', color: 'white', padding: '5px 10px', borderRadius: '4px', zIndex: 10 }}>
-                ¡Ave detectada! ({detections.length})
-             </div>
-           )}
 
-           {/* Cajas de detección de YOLO */}
-           {videoDimensions.width > 0 && detections.map((det, index) => {
-             // asumiendo coordenadas: [x1, y1, x2, y2] enviadas por python
-             const [x1, y1, x2, y2] = det.coordenadas
-             // Calcular el porcentaje basado en las resoluciones originales del video
-             const left = (x1 / videoDimensions.width) * 100
-             const top = (y1 / videoDimensions.height) * 100
-             const width = ((x2 - x1) / videoDimensions.width) * 100
-             const height = ((y2 - y1) / videoDimensions.height) * 100
-
-             return (
-               <div
-                 key={index}
-                 style={{
-                   position: 'absolute',
-                   border: '2px solid #00FF00',
-                   left: `${left}%`,
-                   top: `${top}%`,
-                   width: `${width}%`,
-                   height: `${height}%`,
-                   zIndex: 5,
-                   pointerEvents: 'none'
-                 }}
-               >
-                 <div style={{
-                   position: 'absolute',
-                   top: '-25px',
-                   left: '-2px',
-                   backgroundColor: '#00FF00',
-                   color: '#000',
-                   padding: '2px 6px',
-                   fontSize: '12px',
-                   fontWeight: 'bold',
-                   whiteSpace: 'nowrap',
-                   borderRadius: '4px 4px 4px 0'
-                 }}>
-                   {det.especie} ({(det.score_final).toFixed(1)}%)
-                 </div>
-               </div>
-             )
-           })}
-        </div>
-        
-        {/* Usamos este canvas en memoria (invisible) para sacar las fotos del video */}
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-
+        {/* Image detail modal */}
+        {showImageDetail && (
+          <div
+            className="camera-detail-modal-overlay"
+            onClick={() => setShowImageDetail(null)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Escape' && setShowImageDetail(null)}
+          >
+            <div
+              className="camera-detail-modal-content"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowImageDetail(null)}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+              <img
+                src={showImageDetail.foto_base64}
+                alt={showImageDetail.especie}
+                className="modal-image"
+              />
+              <div className="modal-info">
+                <h3>{showImageDetail.especie}</h3>
+                <p>Confianza: {showImageDetail.confianza.toFixed(2)}%</p>
+                <p>Score Final: {showImageDetail.score_final.toFixed(2)}%</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </HomeShell>
   )

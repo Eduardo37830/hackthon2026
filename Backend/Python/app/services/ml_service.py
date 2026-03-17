@@ -122,6 +122,7 @@ def procesar_frame(bytes_imagen: bytes, id_dispositivo: str, ubicacion: str) -> 
         raise ValueError("Imagen no válida o corrupta")
 
     h, w, _ = frame.shape
+    logger.debug(f"Frame recibido: {w}x{h} desde {id_dispositivo}")
 
     # Detectar objetos (aves)
     # save=False evita guardar imágenes/etiquetas
@@ -136,6 +137,8 @@ def procesar_frame(bytes_imagen: bytes, id_dispositivo: str, ubicacion: str) -> 
         project=None,
         name=None
     )[0]
+    
+    logger.debug(f"YOLO detectó {len(resultados_det.boxes) if resultados_det.boxes is not None else 0} cajas")
 
     candidatas = []
 
