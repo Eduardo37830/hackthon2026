@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, FC, ReactNode } from 'react'
 
-type ButtonVariant = 'neutral' | 'primary'
+type ButtonVariant = 'neutral' | 'primary' | 'ghost'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   readonly children: ReactNode
@@ -13,7 +13,9 @@ export const Button: FC<ButtonProps> = ({ children, variant = 'neutral', classNa
   const toneClasses =
     variant === 'primary'
       ? 'shared-button--primary border-neutral-900 bg-neutral-900 text-neutral-0 hover:bg-neutral-800'
-      : 'shared-button--neutral border-neutral-400 bg-neutral-0 text-neutral-900 hover:border-neutral-500 hover:bg-neutral-100'
+      : variant === 'ghost'
+        ? 'shared-button--ghost border-transparent bg-transparent text-neutral-900 hover:bg-neutral-100'
+        : 'shared-button--neutral border-neutral-400 bg-neutral-0 text-neutral-900 hover:border-neutral-500 hover:bg-neutral-100'
   const classes = [baseClasses, toneClasses, className].filter(Boolean).join(' ')
 
   return (

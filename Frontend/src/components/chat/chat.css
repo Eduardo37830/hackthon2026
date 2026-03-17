@@ -40,9 +40,14 @@
   justify-content: center;
   cursor: pointer;
   z-index: 640;
-  --chat-launcher-travel: calc(100svh - var(--home-header-height) - var(--home-footer-height) - var(--chat-launcher-size) - 28px);
+  --chat-launcher-travel: calc(
+    100svh - var(--home-header-height) - var(--home-footer-height) - var(--chat-launcher-size) -
+      28px
+  );
   transform: translateY(var(--chat-launcher-travel));
-  transition: transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease;
+  transition:
+    transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease;
 }
 
 .bird-chat-launcher:hover {
@@ -80,7 +85,9 @@
   opacity: 0;
   transform: translateY(16px);
   pointer-events: none;
-  transition: opacity 240ms ease, transform 240ms ease;
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease;
   z-index: 630;
 }
 
@@ -102,7 +109,10 @@
   margin: 0;
   cursor: pointer;
   z-index: 645;
-  --chat-launcher-travel: calc(100svh - var(--home-header-height) - var(--home-footer-height) - var(--chat-launcher-size) - 28px);
+  --chat-launcher-travel: calc(
+    100svh - var(--home-header-height) - var(--home-footer-height) - var(--chat-launcher-size) -
+      28px
+  );
   transform: translateY(calc(var(--chat-launcher-travel) - var(--chat-standing-size) + 8px));
   transition: transform 340ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -258,6 +268,21 @@
   border-bottom-left-radius: 4px;
 }
 
+.bird-chat-message-image {
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.bird-chat-message-image img {
+  max-width: 220px;
+  max-height: 180px;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
 .bird-chat-plain-text {
   margin: 0;
 }
@@ -402,6 +427,12 @@
   object-fit: contain;
 }
 
+.bird-chat-typing-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .bird-chat-typing {
   padding: 10px 10px;
   border-radius: 16px;
@@ -412,6 +443,23 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+}
+
+.bird-chat-typing-tool-status {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-neutral-500);
+  font-style: italic;
+  animation: bird-chat-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bird-chat-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .bird-chat-typing-dot {
@@ -437,9 +485,133 @@
   background: var(--color-neutral-0);
   border-top: 1px solid var(--color-neutral-300);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.bird-chat-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-neutral-100);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 8px;
+}
+
+.bird-chat-image-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.bird-chat-image-name {
+  flex: 1;
+  font-size: var(--text-label-sm-size);
+  color: var(--color-neutral-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bird-chat-remove-image {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.bird-chat-remove-image:hover {
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-700);
+}
+
+.bird-chat-remove-image:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bird-chat-input-container {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+}
+
+.bird-chat-attach-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.bird-chat-attach-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+  min-width: 120px;
+}
+
+.bird-chat-attach-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-700);
+  font-size: var(--text-body-size);
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.bird-chat-attach-menu-item:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+}
+
+.bird-chat-attach-button {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 1px solid var(--color-neutral-300) !important;
+  color: var(--color-neutral-600) !important;
+}
+
+.bird-chat-attach-button:hover {
+  background: var(--color-neutral-100) !important;
+  color: var(--color-neutral-800) !important;
+}
+
+.bird-chat-attach-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .bird-chat-input {

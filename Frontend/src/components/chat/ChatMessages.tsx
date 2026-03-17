@@ -9,10 +9,11 @@ import { TypingIndicator } from '@/components/chat/TypingIndicator'
 interface ChatMessagesProps {
   readonly messages: readonly ChatMessage[]
   readonly showTypingIndicator: boolean
+  readonly isUsingTool?: boolean
   readonly messageListEndRef: RefObject<HTMLDivElement | null>
 }
 
-export const ChatMessages: FC<ChatMessagesProps> = ({ messages, showTypingIndicator, messageListEndRef }) => {
+export const ChatMessages: FC<ChatMessagesProps> = ({ messages, showTypingIndicator, isUsingTool, messageListEndRef }) => {
   const showInitialState = messages.length === 0 && !showTypingIndicator
 
   return (
@@ -37,7 +38,7 @@ export const ChatMessages: FC<ChatMessagesProps> = ({ messages, showTypingIndica
             <div className="bird-chat-message-avatar" aria-hidden="true">
               <img className="bird-chat-message-avatar-image" src="/bird.webp" alt={labels.chatAssistantAvatarAlt} />
             </div>
-            <TypingIndicator />
+            <TypingIndicator isUsingTool={isUsingTool} />
           </li>
         ) : null}
       </ul>

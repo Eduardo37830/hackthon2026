@@ -17,11 +17,14 @@ export const BirdHammerChat: FC = () => {
     chatState,
     messages,
     composerValue,
+    selectedImage,
     isChatVisible,
     isInputDisabled,
     showTypingIndicator,
+    isUsingTool,
     messageListEndRef,
     setComposerValue,
+    setSelectedImage,
     toggleChat,
     sendMessage,
   } = useChat()
@@ -46,9 +49,17 @@ export const BirdHammerChat: FC = () => {
           <ChatMessages
             messages={messages}
             showTypingIndicator={showTypingIndicator}
+            isUsingTool={isUsingTool}
             messageListEndRef={messageListEndRef}
           />
-          <ChatInputBar value={composerValue} disabled={isInputDisabled} onChange={setComposerValue} onSubmit={sendMessage} />
+          <ChatInputBar
+            value={composerValue}
+            disabled={isInputDisabled}
+            selectedImage={selectedImage}
+            onChange={setComposerValue}
+            onImageChange={setSelectedImage}
+            onSubmit={sendMessage}
+          />
         </article>
       </ChatWindow>
 

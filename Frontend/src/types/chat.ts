@@ -5,6 +5,7 @@ export interface ChatMessage {
   readonly role: ChatRole
   readonly content: string
   readonly createdAt: number
+  readonly imageUrl?: string
 }
 
 export type ChatUiState = 'closed' | 'opening' | 'open' | 'loading' | 'disabled'

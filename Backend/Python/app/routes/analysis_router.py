@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile, Form, WebSocket, WebSocketDisconnect
-from app.controllers.analysis_controller import analizar_frame_controller
+from app.controllers.analysis_controller import analizar_frame_controller, analizar_foto_chat_controller
 from app.DTOs.analysis_dto import AnalisisResponseDTO
 from app.services.ml_service import procesar_frame
 import requests
@@ -112,6 +112,26 @@ async def broadcast_to_viewers(camera_id: str, payload: dict) -> None:
             after_cleanup,
         )
 
+
+@router.post("/analizar_foto_chat", response_model=AnalisisResponseDTO)
+async def endpoint_analizar_foto_chat(
+    archivo: UploadFile = File(...)
+):
+    """
+    Recibe una imagen puntual desde el chat y devuelve las detecciones 
+    optimizadas usando Test-Time Augmentation y filtradas.
+    """
+    return await analizar_foto_chat_controller(archivo)
+
+@router.post("/analizar_foto_chat", response_model=AnalisisResponseDTO)
+async def endpoint_analizar_foto_chat(
+    archivo: UploadFile = File(...)
+):
+    """
+    Recibe una imagen puntual desde el chat y devuelve las detecciones 
+    optimizadas usando Test-Time Augmentation y filtradas.
+    """
+    return await analizar_foto_chat_controller(archivo)
 
 @router.post("/analizar_frame", response_model=AnalisisResponseDTO)
 async def endpoint_analizar_frame(

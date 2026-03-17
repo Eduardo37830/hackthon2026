@@ -43,6 +43,7 @@ public class SecurityConfiguration {
                     auth.requestMatchers("/bird/**").permitAll();
                     auth.requestMatchers("/photo").permitAll();
                     auth.requestMatchers("/photo/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/chat/ask").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
