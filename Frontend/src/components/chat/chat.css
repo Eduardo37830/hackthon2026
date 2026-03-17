@@ -549,6 +549,48 @@
   align-items: center;
 }
 
+.bird-chat-attach-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.bird-chat-attach-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+  min-width: 120px;
+}
+
+.bird-chat-attach-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-700);
+  font-size: var(--text-body-size);
+  text-align: left;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.bird-chat-attach-menu-item:hover {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+}
+
 .bird-chat-attach-button {
   width: 48px;
   height: 48px;
