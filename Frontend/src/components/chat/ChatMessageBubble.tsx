@@ -92,6 +92,11 @@ export const ChatMessageBubble: FC<ChatMessageBubbleProps> = ({ message }) => {
       ) : null}
 
       <div className={`bird-chat-message-bubble ${isAssistant ? 'is-assistant' : 'is-user'}`}>
+        {message.imageUrl && (
+          <div className="bird-chat-message-image">
+            <img src={message.imageUrl} alt="Imagen enviada" />
+          </div>
+        )}
         {isAssistant ? (
           <ReactMarkdown
             className="bird-chat-markdown"

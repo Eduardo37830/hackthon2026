@@ -24,7 +24,16 @@ CONFIANZA_CLASIFICADOR = 0.40
 MIN_ANCHO_CAJA = 20
 MIN_ALTO_CAJA = 20
 MIN_AREA_RELATIVA = 0.0001   # 0.01% del frame
-SOLO_MEJOR_AVE = False
+
+# Test-Time Augmentation para clasificación más precisa
+USE_TTA_CHAT = True  # True = más preciso pero más lento (recomendado para chat)
+USE_TTA_VIDEO = False  # False = más rápido (recomendado para video en tiempo real)
+
+# Configuración de cuántas aves devolver
+# True = solo devolver el ave con mayor confianza
+# False = devolver todas las aves detectadas que superen el umbral de confianza
+SOLO_MEJOR_AVE_CHAT = True   # Para chat: devuelve solo la mejor
+SOLO_MEJOR_AVE_VIDEO = False  # Para video: devuelve todas las detectadas
 
 # ============= CONFIGURACIÓN SUPABASE =============
 

@@ -1,10 +1,6 @@
-import { TOKEN_STORAGE_KEY } from '@/config'
+import { API_BASE_URL, TOKEN_STORAGE_KEY } from '@/config'
 import { fetchApi } from '@/services/http.service'
 import type { ChatMessage } from '@/types/chat'
-
-interface ChatRequestBody {
-  readonly message: string
-}
 
 interface ChatResponseBody {
   readonly response: string
@@ -21,17 +17,18 @@ function buildConversationContext(history: readonly ChatMessage[]): string {
   })
 
   return `Contexto de la conversación (últimos 5 mensajes, del más antiguo al más reciente):\n${lines.join(
-    '\n',
+    '\n'
   )}\n\n`
 }
 
 export async function sendMessageToGemini(
   message: string,
   history: readonly ChatMessage[],
+  image?: File
 ): Promise<string> {
   const normalizedMessage = message.trim()
 
-  if (!normalizedMessage) {
+  if (!normalizedMessage && !image) {
     return ''
   }
 
@@ -40,15 +37,30 @@ export async function sendMessageToGemini(
   const context = buildConversationContext(history)
   const composedMessage = `${context}Mensaje actual del usuario:\n${normalizedMessage}`
 
-  const payload: ChatRequestBody = {
-    message: composedMessage,
+  // Create FormData for multipart/form-data request
+  const formData = new FormData()
+  formData.append('message', composedMessage)
+
+  if (image) {
+    formData.append('image', image)
   }
 
-  const response = await fetchApi<ChatResponseBody>('/chat/ask', {
+  // For FormData, we need to handle the request differently
+  const normalizedBase = API_BASE_URL.replace(/\/$/, '')
+  const url = `${normalizedBase}/chat/ask`
+
+  const response = await fetch(url, {
     method: 'POST',
-    body: payload,
-    token,
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    body: formData,
   })
 
-  return response.response
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const data: ChatResponseBody = await response.json()
+  return data.response
 }
