@@ -25,6 +25,7 @@ interface CameraListProps {
   readonly isAdmin: boolean
   readonly isBusy?: boolean
   readonly onCreate?: () => void
+  readonly onView: (cameraId: string) => void
   readonly onEdit: (cameraId: string) => void
   readonly onDelete: (cameraId: string) => void
 }
@@ -63,6 +64,7 @@ export const CameraList: FC<CameraListProps> = ({
   isAdmin,
   isBusy = false,
   onCreate,
+  onView,
   onEdit,
   onDelete,
 }) => {
@@ -136,9 +138,8 @@ export const CameraList: FC<CameraListProps> = ({
             <div className="camera-list-item-actions">
               <Button
                 type="button"
-                title={labels.camerasViewDisabledTooltip}
-                disabled
                 aria-label={`${labels.camerasViewAction} ${camera.name}`}
+                onClick={() => onView(camera.id)}
               >
                 <Eye size={15} />
               </Button>

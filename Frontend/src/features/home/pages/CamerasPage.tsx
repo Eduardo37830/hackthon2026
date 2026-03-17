@@ -164,6 +164,7 @@ function toCameraPayload(state: CameraFormState): CameraUpsertPayload | null {
 }
 
 export const CamerasPage: FC<CamerasPageProps> = () => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
   const [cameras, setCameras] = useState<readonly CameraDto[]>([])
@@ -421,6 +422,10 @@ export const CamerasPage: FC<CamerasPageProps> = () => {
     void loadCameras(currentPage)
   }, [currentPage, loadCameras])
 
+  const handleViewCamera = useCallback((cameraId: string) => {
+    navigate(`/cameras/${cameraId}`)
+  }, [navigate])
+
   return (
     <HomeShell activeTab="cameras" contentClassName="home-shell-content--top">
       <div className="cameras-page-wrap">
@@ -462,6 +467,7 @@ export const CamerasPage: FC<CamerasPageProps> = () => {
                     isAdmin={isAdmin}
                     isBusy={isMutating}
                     onCreate={handleOpenCreateForm}
+                    onView={handleViewCamera}
                     onEdit={handleOpenEditForm}
                     onDelete={(cameraId) => {
                       void handleDeleteCamera(cameraId)
