@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { labels } from '@/constants/labels'
 import { Button } from '@/shared/ui/button/Button'
 import { Card } from '@/shared/ui/card/Card'
+import { Spinner } from '@/components/Spinner'
 import { CameraSocketAdapter } from '@/features/realtime/adapters/CameraSocketAdapter'
 import { StreamingSocketAdapter } from '@/features/realtime/adapters/StreamingSocketAdapter'
 import { REALTIME_CONSTANTS } from '@/features/realtime/adapters/realtime.constants'
@@ -143,7 +144,8 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
   const navigate = useNavigate()
   const params = useParams<{ cameraId: string }>()
 
-  const initialCameraId = params.cameraId ?? ''
+  const routeCameraId = (params.cameraId ?? '').trim()
+  const initialCameraId = routeCameraId
   const activeStreamingSet = useCameraStreamingAvailability()
   const [selectedCameraId, setSelectedCameraId] = useState(initialCameraId)
   const [cameraIds, setCameraIds] = useState<string[]>(initialCameraId ? [initialCameraId] : [])
@@ -174,6 +176,17 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
   useEffect(() => {
     document.title = labels.streamPageTitle
   }, [])
+
+  useEffect(() => {
+    if (!routeCameraId) {
+      return
+    }
+
+    setSelectedCameraId(routeCameraId)
+    setCameraIds([routeCameraId])
+    setConnectionState('loading')
+    setRetryAttempt(0)
+  }, [routeCameraId])
 
   const fallbackDimensions = useMemo(() => ({ width: 1280, height: 720 }), [])
 
@@ -303,20 +316,14 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
         }
 
         setCameraCatalog(response.content)
-        setCameraIds((currentIds) => {
-          const next = new Set(currentIds)
-          response.content.forEach((camera) => {
-            next.add(camera.id)
-          })
+        if (routeCameraId) {
+          setCameraIds([routeCameraId])
+          return
+        }
 
-          if (initialCameraId) {
-            next.add(initialCameraId)
-          }
+        setCameraIds(response.content.map((camera) => camera.id))
 
-          return Array.from(next)
-        })
-
-        if (!initialCameraId && response.content.length > 0) {
+        if (response.content.length > 0) {
           setSelectedCameraId((current) => current || response.content[0].id)
           setConnectionState((current) => (current === 'empty' ? 'loading' : current))
         }
@@ -330,7 +337,7 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
     return () => {
       isMounted = false
     }
-  }, [initialCameraId])
+  }, [initialCameraId, routeCameraId])
 
   useEffect(() => {
     const monitoringAdapter = cameraSocketRef.current
@@ -338,25 +345,28 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
 
     const unsubscribeMonitoring = monitoringAdapter.onMessage((snapshot) => {
       setDelayMs(Date.now() - snapshot.generatedAt)
-      setCameraIds((currentIds) => {
-        const next = new Set(currentIds)
-        snapshot.activeCameraIds.forEach((id) => {
-          next.add(id)
+
+      if (!routeCameraId) {
+        setCameraIds((currentIds) => {
+          const next = new Set(currentIds)
+          snapshot.activeCameraIds.forEach((id) => {
+            next.add(id)
+          })
+
+          if (selectedCameraId) {
+            next.add(selectedCameraId)
+          }
+
+          return Array.from(next)
         })
-
-        if (selectedCameraId) {
-          next.add(selectedCameraId)
-        }
-
-        return Array.from(next)
-      })
+      }
     })
 
     return () => {
       unsubscribeMonitoring()
       monitoringAdapter.disconnect()
     }
-  }, [selectedCameraId])
+  }, [routeCameraId, selectedCameraId])
 
   useEffect(() => {
     if (!selectedCameraId) {
@@ -597,7 +607,7 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
 
               {isLoadingState ? (
                 <div className="camera-stream-loading-overlay" aria-live="polite" aria-busy="true">
-                  <span className="camera-stream-loading-spinner" aria-hidden="true" />
+                  <Spinner tone="dark" size="sm" ariaHidden={false} ariaLabel={statusLabel} />
                   <p>{statusLabel}</p>
                 </div>
               ) : null}

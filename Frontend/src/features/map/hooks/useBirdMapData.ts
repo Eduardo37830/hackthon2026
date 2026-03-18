@@ -34,7 +34,12 @@ function buildZones(
   const now = Date.now()
 
   return cameras
-    .filter((camera) => Number.isFinite(camera.lat) && Number.isFinite(camera.lng))
+    .filter(
+      (camera) =>
+        Number.isFinite(camera.lat) &&
+        Number.isFinite(camera.lng) &&
+        activeStreamingIds.has(camera.id),
+    )
     .map((camera) => {
       const detections = detectionsByCamera.get(camera.id) ?? []
       const birds = detections.flatMap((detection) => detection.birds)

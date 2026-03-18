@@ -48,6 +48,10 @@ JAVA_FORWARD_MAX_BIRDS_PER_EVENT = max(
     0,
     int(os.getenv("JAVA_FORWARD_MAX_BIRDS_PER_EVENT", "0")),
 )
+JAVA_FORWARD_INSERT_BATCH_SIZE = max(
+    1,
+    int(os.getenv("JAVA_FORWARD_INSERT_BATCH_SIZE", "20")),
+)
 DIAGNOSTIC_FRAME_BASE64 = (
     "data:image/jpeg;base64,"
     "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQ"
@@ -169,28 +173,38 @@ async def forward_payload_batch_to_java(camera_id: str, payloads: list[dict]) ->
 
     success_count = 0
 
-    for payload in payloads:
-        try:
-            response = await asyncio.to_thread(
-                requests.post,
-                JAVA_PHOTO_BIRD_ENDPOINT,
-                json=payload,
-                timeout=JAVA_FORWARD_REQUEST_TIMEOUT_SECONDS,
-            )
-            if 200 <= response.status_code < 300:
-                success_count += 1
-            else:
-                logger.warning(
-                    "WS forwarding non-success status | camera_id=%s | status=%s",
-                    camera_id,
-                    response.status_code,
+    for batch_start in range(0, len(payloads), JAVA_FORWARD_INSERT_BATCH_SIZE):
+        payload_batch = payloads[batch_start : batch_start + JAVA_FORWARD_INSERT_BATCH_SIZE]
+
+        for payload in payload_batch:
+            try:
+                response = await asyncio.to_thread(
+                    requests.post,
+                    JAVA_PHOTO_BIRD_ENDPOINT,
+                    json=payload,
+                    timeout=JAVA_FORWARD_REQUEST_TIMEOUT_SECONDS,
                 )
-        except Exception as request_error:
-            logger.error(
-                "WS forwarding error | camera_id=%s | error=%s",
-                camera_id,
-                str(request_error),
-            )
+                if 200 <= response.status_code < 300:
+                    success_count += 1
+                else:
+                    logger.warning(
+                        "WS forwarding non-success status | camera_id=%s | status=%s",
+                        camera_id,
+                        response.status_code,
+                    )
+            except Exception as request_error:
+                logger.error(
+                    "WS forwarding error | camera_id=%s | error=%s",
+                    camera_id,
+                    str(request_error),
+                )
+
+        logger.info(
+            "WS forwarding batch chunk finished | camera_id=%s | chunk_size=%s | chunk_from=%s",
+            camera_id,
+            len(payload_batch),
+            batch_start,
+        )
 
     logger.info(
         "WS forwarding batch finished | camera_id=%s | queued=%s | success=%s",
