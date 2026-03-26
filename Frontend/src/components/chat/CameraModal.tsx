@@ -1,5 +1,5 @@
 import { type FC, useEffect, useRef, useState } from 'react'
-import { Camera, X, RefreshCw } from 'lucide-react'
+import { Camera, X } from 'lucide-react'
 import { Button } from '@/shared/ui/button/Button'
 import './camera-modal.css'
 
@@ -15,11 +15,14 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
+    let activeStream: MediaStream | null = null
+
     const startCamera = async (): Promise<void> => {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
+          video: { facingMode: 'environment' },
         })
+        activeStream = mediaStream
         setStream(mediaStream)
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream
@@ -33,13 +36,13 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
     void startCamera()
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => {
+      if (activeStream) {
+        activeStream.getTracks().forEach((track) => {
           track.stop()
         })
       }
     }
-  }, []) // Empty deps for one-time initialization
+  }, [])
 
   const handleCapture = (): void => {
     if (videoRef.current && canvasRef.current) {
@@ -54,10 +57,10 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
           if (blob) {
             const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' })
             onCapture(file)
-            
+
             // Stop tracks before closing
             if (stream) {
-              stream.getTracks().forEach(track => {
+              stream.getTracks().forEach((track) => {
                 track.stop()
               })
             }
@@ -69,7 +72,7 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
 
   const handleClose = (): void => {
     if (stream) {
-      stream.getTracks().forEach(track => {
+      stream.getTracks().forEach((track) => {
         track.stop()
       })
     }
@@ -85,7 +88,7 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="bird-camera-modal-body">
           {error ? (
             <div className="bird-camera-error">
@@ -93,22 +96,22 @@ export const CameraModal: FC<CameraModalProps> = ({ onCapture, onClose }) => {
             </div>
           ) : (
             <div className="bird-camera-viewfinder">
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted 
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
                 className="bird-camera-video"
               />
               <canvas ref={canvasRef} style={{ display: 'none' }} />
             </div>
           )}
         </div>
-        
+
         <div className="bird-camera-modal-footer">
-          <Button 
-            type="button" 
-            variant="primary" 
+          <Button
+            type="button"
+            variant="primary"
             className="bird-camera-capture-btn"
             onClick={handleCapture}
             disabled={!!error}

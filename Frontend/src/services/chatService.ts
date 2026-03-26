@@ -1,5 +1,4 @@
 import { API_BASE_URL, TOKEN_STORAGE_KEY } from '@/config'
-import { fetchApi } from '@/services/http.service'
 import type { ChatMessage } from '@/types/chat'
 
 interface ChatResponseBody {

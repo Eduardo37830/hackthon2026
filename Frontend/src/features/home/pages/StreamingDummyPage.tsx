@@ -6,7 +6,6 @@ import { getStoredToken } from '@/features/auth/services/auth.service'
 import { listCamerasRequest, updateCameraRequest } from '@/features/home/services/cameras.service'
 import type { CameraDto } from '@/features/home/types/camera.types'
 import { StreamingSocketAdapter } from '@/features/realtime/adapters/StreamingSocketAdapter'
-import { REALTIME_CONSTANTS } from '@/features/realtime/adapters/realtime.constants'
 import type { DetectionBird } from '@/features/realtime/types/realtime.types'
 import {
   clearCameraStreamPresence,
@@ -483,8 +482,8 @@ export const StreamingDummyPage: FC<StreamingDummyPageProps> = () => {
         frameMetricsRef.current = computeContainMetrics(
           lastFrameWRef.current,
           lastFrameHRef.current,
-          overlayCanvasRef.current?.width ?? CAPTURE_WIDTH,
-          overlayCanvasRef.current?.height ?? CAPTURE_HEIGHT,
+          overlayCanvasRef.current?.width ?? DEFAULT_FRAME_WIDTH,
+          overlayCanvasRef.current?.height ?? DEFAULT_FRAME_HEIGHT,
         )
         drawOverlay()
 

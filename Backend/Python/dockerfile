@@ -1,33 +1,73 @@
-# Imagen base ligera
-FROM python:3.12-slim
+# syntax=docker/dockerfile:1
 
-# Evita archivos .pyc y mejora logs
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# =========================
+# Build stage
+# =========================
+FROM python:3.12-slim AS builder
 
-# Dependencias del sistema para compilar psycopg2 (pg_config)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+	PYTHONUNBUFFERED=1 \
+	PIP_NO_CACHE_DIR=1 \
+	UV_COMPILE_BYTECODE=1 \
+	UV_LINK_MODE=copy
+
+WORKDIR /app
+
+# Dependencias de compilacion para paquetes nativos (ej. psycopg2)
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	build-essential \
 	libpq-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Instalar uv
-RUN pip install --no-cache-dir uv
+RUN pip install --upgrade pip && pip install uv
 
-# Directorio de trabajo
-WORKDIR /app
-
-# Copiar archivos de dependencias primero (para cache de Docker)
+# Copia primero archivos de dependencias para mejorar cache
 COPY pyproject.toml uv.lock ./
 
-# Instalar dependencias del proyecto
+# Crea entorno y descarga dependencias bloqueadas
 RUN uv sync --frozen --no-dev
 
-# Copiar el resto del código
+# Copia el codigo y valida que el lockfile resuelve con el proyecto actual
 COPY . .
+RUN uv sync --frozen --no-dev
 
-# Puerto usado por FastAPI
+# =========================
+# Runtime stage
+# =========================
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+	PYTHONUNBUFFERED=1 \
+	PORT=8000 \
+	PATH="/app/.venv/bin:${PATH}"
+
+WORKDIR /app
+
+# Solo dependencias necesarias en runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	libpq5 \
+	libglib2.0-0 \
+	libgl1 \
+	libsm6 \
+	libxext6 \
+	libxrender1 \
+	libxcb1 \
+	libgomp1 \
+	curl \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Usuario no root para endurecer seguridad
+RUN groupadd --system app && useradd --system --gid app --create-home app
+
+COPY --from=builder --chown=app:app /app /app
+
+USER app
+
 EXPOSE 8000
 
-# Comando para ejecutar la API
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Healthcheck util para orquestadores y Azure
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+	CMD curl --fail http://127.0.0.1:${PORT}/ || exit 1
+
+# Azure suele inyectar PORT; se usa ese valor cuando exista
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

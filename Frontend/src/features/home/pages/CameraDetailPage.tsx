@@ -147,8 +147,10 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
   const routeCameraId = (params.cameraId ?? '').trim()
   const initialCameraId = routeCameraId
   const activeStreamingSet = useCameraStreamingAvailability()
-  const [selectedCameraId, setSelectedCameraId] = useState(initialCameraId)
-  const [cameraIds, setCameraIds] = useState<string[]>(initialCameraId ? [initialCameraId] : [])
+  const [selectedCameraIdState, setSelectedCameraIdState] = useState(initialCameraId)
+  const selectedCameraId = routeCameraId || selectedCameraIdState
+  const [cameraIdsState, setCameraIdsState] = useState<string[]>(initialCameraId ? [initialCameraId] : [])
+  const cameraIds = useMemo(() => (routeCameraId ? [routeCameraId] : cameraIdsState), [cameraIdsState, routeCameraId])
   const [cameraCatalog, setCameraCatalog] = useState<readonly CameraDto[]>([])
   const [connectionState, setConnectionState] = useState<ConnectionState>(initialCameraId ? 'loading' : 'empty')
   const [retryAttempt, setRetryAttempt] = useState(0)
@@ -176,17 +178,6 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
   useEffect(() => {
     document.title = labels.streamPageTitle
   }, [])
-
-  useEffect(() => {
-    if (!routeCameraId) {
-      return
-    }
-
-    setSelectedCameraId(routeCameraId)
-    setCameraIds([routeCameraId])
-    setConnectionState('loading')
-    setRetryAttempt(0)
-  }, [routeCameraId])
 
   const fallbackDimensions = useMemo(() => ({ width: 1280, height: 720 }), [])
 
@@ -317,14 +308,13 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
 
         setCameraCatalog(response.content)
         if (routeCameraId) {
-          setCameraIds([routeCameraId])
           return
         }
 
-        setCameraIds(response.content.map((camera) => camera.id))
+        setCameraIdsState(response.content.map((camera) => camera.id))
 
         if (response.content.length > 0) {
-          setSelectedCameraId((current) => current || response.content[0].id)
+          setSelectedCameraIdState((current) => current || response.content[0].id)
           setConnectionState((current) => (current === 'empty' ? 'loading' : current))
         }
       } catch {
@@ -347,7 +337,7 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
       setDelayMs(Date.now() - snapshot.generatedAt)
 
       if (!routeCameraId) {
-        setCameraIds((currentIds) => {
+        setCameraIdsState((currentIds) => {
           const next = new Set(currentIds)
           snapshot.activeCameraIds.forEach((id) => {
             next.add(id)
@@ -469,7 +459,7 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
         return
       }
 
-      setSelectedCameraId(nextCameraId)
+      setSelectedCameraIdState(nextCameraId)
       setConnectionState('loading')
     },
     [cameraOptions, hasMultipleCameras, selectedCameraId],
@@ -654,7 +644,7 @@ export const CameraDetailPage: FC<CameraDetailPageProps> = () => {
                   value={selectedCameraId}
                   onChange={(event) => {
                     const nextCameraId = event.target.value
-                    setSelectedCameraId(nextCameraId)
+                    setSelectedCameraIdState(nextCameraId)
                     setConnectionState(nextCameraId ? 'loading' : 'empty')
                   }}
                 >

@@ -13,11 +13,16 @@ type StompAdapterEvents<TPayload> = {
 
 export abstract class StompSocketAdapter<TPayload> {
   protected readonly emitter = new TypedEventEmitter<StompAdapterEvents<TPayload>>()
+  private readonly context: string
+  private readonly topic: string
   private client: Client | null = null
   private subscription: StompSubscription | null = null
   private retryAttempt = 0
 
-  protected constructor(private readonly context: string, private readonly topic: string) {}
+  protected constructor(context: string, topic: string) {
+    this.context = context
+    this.topic = topic
+  }
 
   onLifecycle(listener: (event: AdapterLifecycle) => void): () => void {
     return this.emitter.on('lifecycle', listener)

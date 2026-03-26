@@ -128,8 +128,8 @@ function toCameraPayload(state: CameraFormState): CameraUpsertPayload | null {
   const angleXY = Number(state.angleXY)
   const angleXZ = Number(state.angleXZ)
   const height = Number(state.height)
-  const latitude = REALTIME_CONSTANTS.caldasCenter.lat
-  const longitude = REALTIME_CONSTANTS.caldasCenter.lng
+  const latitude = (REALTIME_CONSTANTS.caldasBounds.minLat + REALTIME_CONSTANTS.caldasBounds.maxLat) / 2
+  const longitude = (REALTIME_CONSTANTS.caldasBounds.minLng + REALTIME_CONSTANTS.caldasBounds.maxLng) / 2
 
   if (
     !state.name.trim() ||
