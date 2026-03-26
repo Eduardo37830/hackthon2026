@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class ChatService {
 
-    @Value("${openai.api.key}")
+    @Value("${openai.api.key:}")
     private String apiKey;
 
     @Value("${python.backend.url:http://localhost:8000}")
