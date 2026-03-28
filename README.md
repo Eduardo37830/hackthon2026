@@ -127,6 +127,7 @@ ENABLE_JAVA_BIRD_FORWARDING=true
 # Java backend
 JWT_SECRET=
 BIRD_REALTIME_PERSIST=false
+APP_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174,https://red-wave-0ac496b0f.6.azurestaticapps.net
 ```
 
 ### Variables de `application.properties` (Backend Java)

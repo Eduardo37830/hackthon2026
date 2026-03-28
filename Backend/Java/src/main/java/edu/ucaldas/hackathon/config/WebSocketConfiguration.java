@@ -12,6 +12,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
 
+    private final AllowedOriginsProvider allowedOriginsProvider;
+
+    public WebSocketConfiguration(AllowedOriginsProvider allowedOriginsProvider) {
+        this.allowedOriginsProvider = allowedOriginsProvider;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");
@@ -20,7 +26,15 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] allowedOrigins = allowedOriginsProvider.getAllowedOrigins();
+
+        // Keep plain WebSocket endpoint for existing STOMP clients.
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:8080", "http://localhost:5173", "http://localhost:5174");
+                .setAllowedOrigins(allowedOrigins);
+
+        // Also expose SockJS fallback for broader browser compatibility.
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(allowedOrigins)
+                .withSockJS();
     }
 }
