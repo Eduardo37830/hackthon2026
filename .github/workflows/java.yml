@@ -14,15 +14,13 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17' # Coincide con tu pom.xml
+          java-version: '17' # Confirmado en tu pom.xml
           distribution: 'temurin'
           cache: maven
 
       - name: Build with Maven
         run: |
           cd Backend/Java
-          # Usamos 'mvn' directamente porque GitHub ya lo tiene instalado.
-          # Esto evita el error del 'maven-wrapper' que falta en tu repo.
           mvn clean package -DskipTests
 
       - name: Deploy to Azure Web App
