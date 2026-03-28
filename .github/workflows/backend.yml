@@ -1,0 +1,27 @@
+name: Desplegar Backend Python
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Backend/**' # Solo se ejecuta si hay cambios en la carpeta Backend
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Iniciar sesion en Azure Container Registry
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - name: Construir y Subir la imagen a Azure
+      run: |
+        cd Backend
+        docker build -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/backend-yolo:latest .
+        docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/backend-yolo:latest
