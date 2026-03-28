@@ -1,0 +1,32 @@
+name: Desplegar Backend Java
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'Backend/Java/**' ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17' # Cambia a 21 si es la que usas
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: |
+          cd Backend/Java
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'api-java-aves' # EL NOMBRE QUE PUSISTE EN AZURE
+          publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
+          package: './Backend/Java/target/*.jar'
