@@ -29,5 +29,5 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'api-java-aves'
-          publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_RED_WAVE_0AC496B0F }}
           package: 'Backend/Java/target/*.jar'
