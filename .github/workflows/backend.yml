@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'Backend/**' # Solo se ejecuta si hay cambios en la carpeta Backend
+      - 'Backend/Python/**' # <- AHORA SÍ MIRA LA CARPETA CORRECTA
 
 jobs:
   build_and_push:
@@ -22,6 +22,6 @@ jobs:
 
     - name: Construir y Subir la imagen a Azure
       run: |
-        cd Backend
+        cd Backend/Python # <- ENTRA A LA CARPETA CORRECTA
         docker build -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/backend-yolo:latest .
         docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/backend-yolo:latest
