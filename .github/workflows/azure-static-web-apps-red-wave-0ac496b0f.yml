@@ -24,13 +24,14 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_RED_WAVE_0AC496B0F }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "./Frontend" # App source code path
-          api_location: "" # DEJAMOS ESTO VACÍO
-          output_location: "dist" # ¡LA SOLUCIÓN MAGICA!
+          app_location: "./Frontend"
+          api_location: ""
+          output_location: "dist"
+        env: # <--- AQUÍ ESTÁ LA MAGIA
+          VITE_API_BASE_URL: "https://api-java-aves-bkescbexakf2hrex.eastus2-01.azurewebsites.net"
+          VITE_PYTHON_SERVICE_URL: "https://api-aves-backend.livelypebble-b1840c52.eastus2.azurecontainerapps.io"
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
