@@ -14,19 +14,20 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17' # Cambia a 21 si es la que usas
+          java-version: '17' # Coincide con tu pom.xml
           distribution: 'temurin'
           cache: maven
 
       - name: Build with Maven
         run: |
           cd Backend/Java
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
+          # Usamos 'mvn' directamente porque GitHub ya lo tiene instalado.
+          # Esto evita el error del 'maven-wrapper' que falta en tu repo.
+          mvn clean package -DskipTests
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'api-java-aves' # EL NOMBRE QUE PUSISTE EN AZURE
+          app-name: 'api-java-aves'
           publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
-          package: './Backend/Java/target/*.jar'
+          package: 'Backend/Java/target/*.jar'
