@@ -61,19 +61,18 @@ RUN groupadd --system app && useradd --system --gid app --create-home app
 
 COPY --from=builder --chown=app:app /app /app
 
-USER app
-
 # ========= INICIO DESCARGA DE MODELOS =========
-# Creamos la carpeta weights
+# Lo hacemos ANTES del "USER app" para tener permisos de crear carpetas
 RUN mkdir -p /app/weights
-
-# Instalamos gdown usando el entorno virtual que ya configuró Camilo
 RUN pip install gdown
-
-# Descargamos los dos modelos (SOLO EL ID)
 RUN gdown --id 17pw7LZA4Ej82bium_VGWU75WQC2jDrhA -O /app/weights/best.pt
 RUN gdown --id 1ET0bdzAnyidsTV_QE4Qr_e9nKqYmxO9g -O /app/weights/yolo26n.pt
+# Le damos permiso al usuario "app" para que pueda leer los modelos
+RUN chown -R app:app /app/weights
 # ==============================================
+
+# AHORA SÍ, bajamos los privilegios
+USER app
 
 EXPOSE 8000
 
