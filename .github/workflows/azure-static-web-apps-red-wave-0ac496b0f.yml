@@ -30,7 +30,7 @@ jobs:
           api_location: ""
           output_location: "dist"
         env: # <--- AQUÍ ESTÁ LA MAGIA
-          VITE_API_BASE_URL: "https://api-java-aves-bkescbexakf2hrex.eastus2-01.azurewebsites.net"
+          VITE_API_BASE_URL: "https://api-java-aves2-dch3gsevh5dyhqdf.eastus2-01.azurewebsites.net"
           VITE_PYTHON_SERVICE_URL: "https://api-aves-backend.livelypebble-b1840c52.eastus2.azurecontainerapps.io"
           ###### End of Repository/Build Configurations ######
 
