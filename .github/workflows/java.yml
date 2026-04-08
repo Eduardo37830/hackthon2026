@@ -26,6 +26,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'api-java-aves'
+          app-name: 'api-java-aves2'
           publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
           package: 'Backend/Java/target/*.jar'
