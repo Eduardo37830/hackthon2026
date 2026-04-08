@@ -22,10 +22,12 @@ jobs:
         run: |
           cd Backend/Java
           mvn clean package -DskipTests
+          # Agrega esta línea para renombrar el JAR generado a app.jar
+          mv target/*.jar target/app.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'api-java-aves2'
           publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
-          package: 'Backend/Java/target/*.jar'
+          package: 'Backend/Java/target/app.jar' # Aquí cambiaste *.jar por app.jar
