@@ -36,6 +36,8 @@ public class SecurityConfiguration {
                     auth.requestMatchers("/ws/**", "/ws").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/camera/monitoring/status").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/user").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/camera").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/camera/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/camera").hasAnyAuthority("ADMIN");
                     auth.requestMatchers(HttpMethod.PUT, "/camera/**").hasAnyAuthority("ADMIN");
                     auth.requestMatchers(HttpMethod.DELETE, "/camera/**").hasAnyAuthority("ADMIN");
