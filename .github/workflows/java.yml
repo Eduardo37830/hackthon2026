@@ -3,29 +3,34 @@ name: Desplegar Backend Java
 on:
   push:
     branches: [ main ]
-    paths: [ 'Backend/Java/**' ]
+    paths:
+      - 'Backend/Java/**'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          java-version: '17' # Confirmado en tu pom.xml
+          java-version: '17'
           distribution: 'temurin'
           cache: maven
 
       - name: Build with Maven
+        working-directory: Backend/Java
         run: |
-          cd Backend/Java
           mvn clean package -DskipTests
+          JAR=$(find target -maxdepth 1 -type f -name "*.jar" ! -name "original-*.jar" | head -n 1)
+          cp "$JAR" target/app.jar
+          ls -lah target
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'api-java-aves2'
           publish-profile: ${{ secrets.AZURE_JAVA_PUBLISH_PROFILE }}
-          package: 'Backend/Java/target/*.jar'
+          package: 'Backend/Java/target/app.jar'
